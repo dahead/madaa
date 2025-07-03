@@ -2,6 +2,10 @@
 
 MADAA ist ein Kommandozeilen-Tool zur schnellen und umfassenden Analyse von Verzeichnisstrukturen.
 
+## Vorschau
+
+<img src="media/screenshot.png">
+
 ## Features
 
 - Detaillierte Dateityp-Analyse
