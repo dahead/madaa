@@ -662,50 +662,6 @@ func analyzeAccessPatterns(info os.FileInfo, stats *Stats) {
 	}
 }
 
-// XXX
-func getCategoryStats(stats *Stats) map[string]struct {
-	count      int
-	size       int64
-	extensions map[string]int
-} {
-	categories := make(map[string]struct {
-		count      int
-		size       int64
-		extensions map[string]int
-	})
-
-	// Initialisiere Kategorien
-	for _, category := range []string{"code", "doc", "media", "archive", "app"} {
-		categories[category] = struct {
-			count      int
-			size       int64
-			extensions map[string]int
-		}{
-			extensions: make(map[string]int),
-		}
-	}
-
-	// Gruppiere nach Kategorien
-	for ext, count := range stats.TypeFreq {
-		for configExt, category := range fileTypeStyleMap {
-			if ext == configExt {
-				catStats := categories[category.String()]
-				catStats.count += count
-				catStats.size += stats.TypeSizes[ext]
-				catStats.extensions[ext] = count
-				categories[category.String()] = catStats
-				break
-			}
-		}
-	}
-
-	return categories
-}
-
-func isSystemFile(filename string) bool {
-	return systemFilesMap[strings.ToLower(filename)]
-}
-
 func extractWords(filename string) []string {
 	name := strings.TrimSuffix(filename, filepath.Ext(filename))
 	replacer := strings.NewReplacer(",", " ", "_", " ", "-", " ", ".", " ")
@@ -731,13 +687,6 @@ func getSizeStyle(size int64) lipgloss.Style {
 	default:
 		return largeStyle
 	}
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 func displayResults(stats *Stats, maxCount int) string {
