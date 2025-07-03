@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -23,6 +22,83 @@ import (
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/ini.v1"
 )
+
+const defaultConfigContent = `[file_types]
+# Application files
+.exe=app
+.app=app
+.apk=app
+.ipa=app
+
+# Code files
+.go=code
+.mod=code
+.py=code
+.js=code
+.html=code
+.css=code
+.json=code
+.xml=code
+.sql=code
+.sh=code
+.bat=code
+.c=code
+.cpp=code
+.java=code
+.php=code
+.rb=code
+.rs=code
+.swift=code
+
+# Document files
+.txt=doc
+.md=doc
+.pdf=doc
+.rtf=doc
+.odt=doc
+.md=doc
+.json=doc
+.ini=doc
+.conf=doc
+.log=doc
+.csv=doc
+.doc=doc
+.docx=doc
+.xls=doc
+.xlsx=doc
+.ppt=doc
+.pptx=doc
+.epub=doc
+
+# Media files
+.jpg=media
+.jpeg=media
+.png=media
+.gif=media
+.mp3=media
+.mp4=media
+.wav=media
+.avi=media
+.mov=media
+.webm=media
+.flv=media
+.mkv=media
+.ogg=media
+.wmv=media
+.mpg=media
+.mpeg=media
+.m4v=media
+.m4a=media
+.m4p=media
+
+# Archive files
+.zip=archive
+.tar=archive
+.gz=archive
+.7z=archive
+.rar=archive
+.bz2=archive
+`
 
 type FileSize struct {
 	Path string
@@ -204,6 +280,7 @@ var (
 	mediumStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("220"))
 	largeStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
 
+	appStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("208"))
 	codeStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("82"))
 	docStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("33"))
 	mediaStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("165"))
@@ -247,6 +324,8 @@ func loadConfig() error {
 		category := key.Value()
 
 		switch category {
+		case "app":
+			fileTypeStyleMap[ext] = appStyle
 		case "code":
 			fileTypeStyleMap[ext] = codeStyle
 		case "doc":
@@ -258,85 +337,16 @@ func loadConfig() error {
 		}
 	}
 
-	// Load system files
-	systemFilesSection := cfg.Section("system_files")
-	for _, key := range systemFilesSection.Keys() {
-		filename := key.Name()
-		if enabled, _ := strconv.ParseBool(key.Value()); enabled {
-			systemFilesMap[filename] = true
-		}
-	}
-
 	return nil
 }
 
 func createDefaultConfig(path string) error {
-	content := `[file_types]
-# Code files
-.go=code
-.py=code
-.js=code
-.html=code
-.css=code
-.json=code
-.xml=code
-.sql=code
-.sh=code
-.bat=code
-.c=code
-.cpp=code
-.java=code
-.php=code
-.rb=code
-.rs=code
-
-# Document files
-.txt=doc
-.md=doc
-.pdf=doc
-.doc=doc
-.docx=doc
-.rtf=doc
-.odt=doc
-
-# Media files
-.jpg=media
-.jpeg=media
-.png=media
-.gif=media
-.mp3=media
-.mp4=media
-.wav=media
-.avi=media
-.mov=media
-.webm=media
-.flv=media
-
-# Archive files
-.zip=archive
-.tar=archive
-.gz=archive
-.7z=archive
-.rar=archive
-.bz2=archive
-
-[system_files]
-thumbs.db=true
-desktop.ini=true
-.ds_store=true
-hiberfil.sys=true
-pagefile.sys=true
-swapfile.sys=true
-system volume information=true
-recycler=true
-$recycle.bin=true
-`
-	return os.WriteFile(path, []byte(content), 0644)
+	return os.WriteFile(path, []byte(defaultConfigContent), 0644)
 }
 
 func main() {
 	var count int
-	flag.IntVar(&count, "count", 10, "Number of top files to show")
+	flag.IntVar(&count, "count", 3, "Number of top files to show")
 	flag.Parse()
 
 	if flag.NArg() < 1 {
@@ -632,9 +642,6 @@ func analyzeSpecialFiles(path string, info os.FileInfo, stats *Stats) {
 		stats.Symlinks++
 	}
 
-	if isSystemFile(filename) {
-		stats.SystemFiles++
-	}
 }
 
 func analyzeAccessPatterns(info os.FileInfo, stats *Stats) {
@@ -653,6 +660,46 @@ func analyzeAccessPatterns(info os.FileInfo, stats *Stats) {
 			stats.AccessTimes["older than 90 days"]++
 		}
 	}
+}
+
+// XXX
+func getCategoryStats(stats *Stats) map[string]struct {
+	count      int
+	size       int64
+	extensions map[string]int
+} {
+	categories := make(map[string]struct {
+		count      int
+		size       int64
+		extensions map[string]int
+	})
+
+	// Initialisiere Kategorien
+	for _, category := range []string{"code", "doc", "media", "archive", "app"} {
+		categories[category] = struct {
+			count      int
+			size       int64
+			extensions map[string]int
+		}{
+			extensions: make(map[string]int),
+		}
+	}
+
+	// Gruppiere nach Kategorien
+	for ext, count := range stats.TypeFreq {
+		for configExt, category := range fileTypeStyleMap {
+			if ext == configExt {
+				catStats := categories[category.String()]
+				catStats.count += count
+				catStats.size += stats.TypeSizes[ext]
+				catStats.extensions[ext] = count
+				categories[category.String()] = catStats
+				break
+			}
+		}
+	}
+
+	return categories
 }
 
 func isSystemFile(filename string) bool {
@@ -705,6 +752,47 @@ func displayResults(stats *Stats, maxCount int) string {
 		numberStyle.Render(fmt.Sprintf("%d", stats.TotalFiles)),
 		numberStyle.Render(fmt.Sprintf("%d", stats.TotalDirs)),
 		numberStyle.Render(fmt.Sprintf("%.1f", float64(stats.TotalSize)/(1024*1024)))))
+
+	// ... (vorheriger Code bleibt gleich)
+
+	result.WriteString(headerStyle.Render("File Categories"))
+	result.WriteString("\n")
+
+	categoryStats := getCategoryStats(stats)
+
+	// Sortiere Kategorien nach Anzahl
+	type categoryStat struct {
+		name  string
+		count int
+		size  int64
+	}
+	var sortedCategories []categoryStat
+	for cat, stat := range categoryStats {
+		sortedCategories = append(sortedCategories, categoryStat{
+			name:  cat,
+			count: stat.count,
+			size:  stat.size,
+		})
+	}
+	sort.Slice(sortedCategories, func(i, j int) bool {
+		return sortedCategories[i].count > sortedCategories[j].count
+	})
+
+	// Zeige Kategorien
+	for _, cat := range sortedCategories {
+		if cat.count == 0 {
+			continue
+		}
+		percentage := float64(cat.count) / float64(stats.TotalFiles) * 100
+
+		result.WriteString(fmt.Sprintf("%s %s %s\n",
+			getFileTypeStyle(cat.name).Render(fmt.Sprintf("%-12s", strings.Title(cat.name))),
+			numberStyle.Render(fmt.Sprintf("%6d", cat.count)),
+			percentStyle.Render(fmt.Sprintf("(%5.1f%%)", percentage))))
+	}
+	result.WriteString("\n")
+
+	// xxxx
 
 	result.WriteString(headerStyle.Render("File Types"))
 	result.WriteString("\n")
