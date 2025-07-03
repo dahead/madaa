@@ -1,37 +1,39 @@
 # MADAA - Mass Data Analysis Assistant
 
-MADAA ist ein Kommandozeilen-Tool zur schnellen und umfassenden Analyse von Verzeichnisstrukturen.
+MADAA is a command-line tool for quick and comprehensive analysis of directory structures.
 
-## Vorschau
+## Preview
 
 <img src="media/screenshot.png">
 
 ## Features
 
-- Detaillierte Dateityp-Analyse
-- Identifizierung der größten Dateien
-- Größenverteilung
-- Altersanalyse von Dateien
-- Erkennung spezieller Dateien (versteckt, System, Symlinks)
-- Verzeichnisinformationen
-- Fortschrittsanzeige während der Analyse
-- Konfigurierbare Dateityp-Kategorien
-- Parallele Verarbeitung für optimale Performance
-- Farbkodierte Ausgabe für bessere Übersichtlichkeit
+- Detailed file type analysis
+- Identification of largest files
+- Size distribution
+- File age analysis
+- Detection of special files (hidden, system, symlinks)
+- Directory information
+- Progress display during analysis
+- Configurable file type categories
+- Parallel processing for optimal performance
+- Color-coded output for better readability
 
 ## Installation
 
+```bash
+go install github.com/dahead/madaa@latest
 ```
-bash go install github.com/dahead/madaa@latest
-```
-
-### Parameter
-
-- `--count N`: Anzahl der anzuzeigenden Top-Einträge (Standard: 10)
-- `<Verzeichnispfad>`: Zu analysierendes Verzeichnis
 
 
-## Verwendung
+### Parameters
+
+- `--count N`: Number of top entries to display (default: 10)
+- `<directory path>`: Directory to analyze
+
+
+
+## Usage
 
 ```
 $ madaa --count 5 /home/user/
@@ -39,12 +41,13 @@ $ madaa --count 5 /home/user/
 
 ### Ausgabe
 
-Die Analyse zeigt:
-- Übersicht der Gesamtdateien und -größen
-- Top N häufigste Dateitypen
-- Top N größte Dateien
-- Top N Dateien pro Typ
-- Größenverteilung (tiny bis large)
-- Altersanalyse mit ältesten/neuesten Dateien
-- Spezielle Dateiinformationen
-- Verzeichnisstatistiken
+The analysis shows:
+
+- Overview of total files and sizes
+- Top N most common file types
+- Top N largest files
+- Top N files per type
+- Size distribution (tiny to large)
+- Age analysis with oldest/newest files
+- Special file information
+- Directory statistics
