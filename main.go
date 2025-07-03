@@ -746,6 +746,7 @@ func displayResults(stats *Stats, maxCount int) string {
 	result.WriteString(titleStyle.Render("MADAA - Mass Data Analysis Results"))
 	result.WriteString("\n\n")
 
+	// Overview section
 	result.WriteString(headerStyle.Render("Overview"))
 	result.WriteString("\n")
 	result.WriteString(fmt.Sprintf("Files: %s  Directories: %s  Size: %s MB\n\n",
@@ -753,47 +754,72 @@ func displayResults(stats *Stats, maxCount int) string {
 		numberStyle.Render(fmt.Sprintf("%d", stats.TotalDirs)),
 		numberStyle.Render(fmt.Sprintf("%.1f", float64(stats.TotalSize)/(1024*1024)))))
 
-	// ... (vorheriger Code bleibt gleich)
-
+	// File Categories section
 	result.WriteString(headerStyle.Render("File Categories"))
 	result.WriteString("\n")
 
-	categoryStats := getCategoryStats(stats)
+	// Collect category statistics
+	categories := make(map[string]int)
 
-	// Sortiere Kategorien nach Anzahl
+	// Zähle Dateien pro Kategorie
+	for ext, count := range stats.TypeFreq {
+		if _, exists := fileTypeStyleMap[ext]; exists {
+			category := ""
+
+			// Extrahiere die Kategorie aus dem Mapping
+			for configExt, configStyle := range fileTypeStyleMap {
+				if configExt == ext {
+					if strings.Contains(configStyle.String(), "208") {
+						category = "App"
+					} else if strings.Contains(configStyle.String(), "82") {
+						category = "Code"
+					} else if strings.Contains(configStyle.String(), "33") {
+						category = "Document"
+					} else if strings.Contains(configStyle.String(), "165") {
+						category = "Media"
+					} else if strings.Contains(configStyle.String(), "208") {
+						category = "Archive"
+					}
+					break
+				}
+			}
+
+			if category != "" {
+				categories[category] += count
+			}
+		}
+	}
+
+	// Sort categories by count
 	type categoryStat struct {
 		name  string
 		count int
-		size  int64
 	}
 	var sortedCategories []categoryStat
-	for cat, stat := range categoryStats {
+	for cat, count := range categories {
 		sortedCategories = append(sortedCategories, categoryStat{
 			name:  cat,
-			count: stat.count,
-			size:  stat.size,
+			count: count,
 		})
 	}
 	sort.Slice(sortedCategories, func(i, j int) bool {
 		return sortedCategories[i].count > sortedCategories[j].count
 	})
 
-	// Zeige Kategorien
+	// Display categories
 	for _, cat := range sortedCategories {
 		if cat.count == 0 {
 			continue
 		}
 		percentage := float64(cat.count) / float64(stats.TotalFiles) * 100
-
 		result.WriteString(fmt.Sprintf("%s %s %s\n",
-			getFileTypeStyle(cat.name).Render(fmt.Sprintf("%-12s", strings.Title(cat.name))),
+			getFileTypeStyle(strings.ToLower(cat.name)).Render(fmt.Sprintf("%-12s", cat.name)),
 			numberStyle.Render(fmt.Sprintf("%6d", cat.count)),
 			percentStyle.Render(fmt.Sprintf("(%5.1f%%)", percentage))))
 	}
 	result.WriteString("\n")
 
-	// xxxx
-
+	// File Type Details
 	result.WriteString(headerStyle.Render("File Types"))
 	result.WriteString("\n")
 	type kv struct {
@@ -820,44 +846,15 @@ func displayResults(stats *Stats, maxCount int) string {
 	}
 	result.WriteString("\n")
 
+	// Top N Largest Files section
 	result.WriteString(headerStyle.Render(fmt.Sprintf("Top %d Largest Files", maxCount)))
 	result.WriteString("\n")
 	displayLargestFiles(stats.LargestFiles, &result)
 
-	result.WriteString(headerStyle.Render(fmt.Sprintf("Top %d Files by Type", min(maxCount, 10))))
-	result.WriteString("\n")
-
-	var typeSizes []struct {
-		ext   string
-		size  int64
-		count int
-	}
-	for ext, size := range stats.TypeSizes {
-		typeSizes = append(typeSizes, struct {
-			ext   string
-			size  int64
-			count int
-		}{ext, size, stats.TypeFreq[ext]})
-	}
-	sort.Slice(typeSizes, func(i, j int) bool {
-		return typeSizes[i].size > typeSizes[j].size
-	})
-
-	typeDisplayCount := min(maxCount, len(typeSizes))
-	for i := 0; i < typeDisplayCount; i++ {
-		typeInfo := typeSizes[i]
-		if heap, ok := stats.LargestByType[typeInfo.ext]; ok {
-			result.WriteString(fmt.Sprintf("%s (%s files, %s MB):\n",
-				getFileTypeStyle(typeInfo.ext).Render(typeInfo.ext),
-				numberStyle.Render(fmt.Sprintf("%d", typeInfo.count)),
-				numberStyle.Render(fmt.Sprintf("%.1f", float64(typeInfo.size)/(1024*1024)))))
-			displayLargestFiles(heap, &result)
-		}
-	}
-
+	// Size Distribution section
 	result.WriteString(headerStyle.Render("Size Distribution"))
 	result.WriteString("\n")
-	categories := []struct {
+	sizeCategories := []struct {
 		name  string
 		key   string
 		style lipgloss.Style
@@ -867,7 +864,7 @@ func displayResults(stats *Stats, maxCount int) string {
 		{"medium (<100MB)", "medium", mediumStyle},
 		{"large (>100MB)", "large", largeStyle},
 	}
-	for _, cat := range categories {
+	for _, cat := range sizeCategories {
 		if count, ok := stats.SizeDistribution[cat.key]; ok {
 			percentage := float64(count) / float64(stats.TotalFiles) * 100
 			result.WriteString(fmt.Sprintf("%s %s %s\n",
@@ -878,6 +875,7 @@ func displayResults(stats *Stats, maxCount int) string {
 	}
 	result.WriteString("\n")
 
+	// Age Analysis section
 	result.WriteString(headerStyle.Render("Age Analysis"))
 	result.WriteString("\n")
 	if stats.OldestFile != nil {
@@ -903,6 +901,7 @@ func displayResults(stats *Stats, maxCount int) string {
 		staleStyle.Render(fmt.Sprintf("(%.1f%%)", stalePercent))))
 	result.WriteString("\n")
 
+	// Special Files section
 	result.WriteString(headerStyle.Render("Special Files"))
 	result.WriteString("\n")
 	result.WriteString(fmt.Sprintf("Hidden: %s  System: %s  Symlinks: %s  Write-protected: %s\n",
@@ -912,6 +911,7 @@ func displayResults(stats *Stats, maxCount int) string {
 		warnStyle.Render(fmt.Sprintf("%d", stats.WriteProtected))))
 	result.WriteString("\n")
 
+	// Directory Info section
 	result.WriteString(headerStyle.Render("Directory Info"))
 	result.WriteString("\n")
 	result.WriteString(fmt.Sprintf("Empty dirs: %s  Recent changes: %s %s\n",
@@ -919,7 +919,6 @@ func displayResults(stats *Stats, maxCount int) string {
 		numberStyle.Render(fmt.Sprintf("%d", stats.RecentMods)),
 		percentStyle.Render(fmt.Sprintf("(%.1f%%)", float64(stats.RecentMods)/float64(stats.TotalFiles)*100))))
 
-	result.WriteString("\nPress 'q' to quit")
 	return result.String()
 }
 
