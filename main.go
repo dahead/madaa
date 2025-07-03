@@ -577,7 +577,7 @@ func processFile(path string, info os.FileInfo, stats *Stats, maxFiles int) {
 		stats.RecentMods++
 	}
 
-	analyzeSizes(path, info, stats)
+	analyzeSizes(info, stats)
 	analyzeAge(path, info, stats)
 	analyzeSpecialFiles(path, info, stats)
 	analyzeAccessPatterns(info, stats)
@@ -594,7 +594,7 @@ func processFilePermissions(info os.FileInfo, stats *Stats) {
 	}
 }
 
-func analyzeSizes(path string, info os.FileInfo, stats *Stats) {
+func analyzeSizes(info os.FileInfo, stats *Stats) {
 	size := info.Size()
 
 	if size == 0 {
