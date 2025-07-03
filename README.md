@@ -10,16 +10,15 @@ MADAA ist ein Kommandozeilen-Tool zur schnellen und umfassenden Analyse von Verz
 - Altersanalyse von Dateien
 - Erkennung spezieller Dateien (versteckt, System, Symlinks)
 - Verzeichnisinformationen
-- Fortschrittsanzeige während der Analyse
 
 ## Installation
 
 ```
-bash go install github.com/ihr-username/madaa@latest
+bash go install github.com/dahead/madaa@latest
 ```
 
 ## Verwendung
 
 ```
-$ madaa --count 5 /home/benutzer/projekte
+$ madaa --count 5 /home/user/
 ```
