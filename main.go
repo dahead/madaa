@@ -314,7 +314,6 @@ func loadConfig() error {
 
 	// Initialize maps
 	fileTypeStyleMap = make(map[string]lipgloss.Style)
-	systemFilesMap = make(map[string]bool)
 
 	// Load file types
 	fileTypesSection := cfg.Section("file_types")
