@@ -296,7 +296,6 @@ var (
 
 	// Global config maps
 	fileTypeStyleMap map[string]lipgloss.Style
-	systemFilesMap   map[string]bool
 )
 
 func loadConfig() error {
