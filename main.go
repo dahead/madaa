@@ -98,6 +98,21 @@ const defaultConfigContent = `[file_types]
 .7z=archive
 .rar=archive
 .bz2=archive
+
+# Special files
+.kdbx=special
+.key=special
+.gpg=special
+.pem=special
+.crt=special
+.p12=special
+.pfx=special
+.p7b=special
+.kdb=special
+
+# Database 
+.sqlite=database
+.db=database
 `
 
 type FileSize struct {
@@ -280,11 +295,13 @@ var (
 	mediumStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("220"))
 	largeStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
 
-	appStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("208"))
-	codeStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("82"))
-	docStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("33"))
-	mediaStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("165"))
-	archiveStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("208"))
+	appStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("208"))
+	codeStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("82"))
+	docStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("33"))
+	mediaStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("165"))
+	archiveStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("133"))
+	databaseStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("144"))
+	specialStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("155"))
 
 	goodStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("46"))
 	warnStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("226"))
@@ -332,6 +349,10 @@ func loadConfig() error {
 			fileTypeStyleMap[ext] = mediaStyle
 		case "archive":
 			fileTypeStyleMap[ext] = archiveStyle
+		case "special":
+			fileTypeStyleMap[ext] = specialStyle
+		case "database":
+			fileTypeStyleMap[ext] = databaseStyle
 		}
 	}
 
@@ -712,6 +733,14 @@ func displayResults(stats *Stats, maxCount int) string {
 	for ext, count := range stats.TypeFreq {
 		if _, exists := fileTypeStyleMap[ext]; exists {
 			category := ""
+			//
+			//appStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("208"))
+			//codeStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("82"))
+			//docStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("33"))
+			//mediaStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("165"))
+			//archiveStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("133"))
+			//databaseStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("144"))
+			//specialStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("155"))
 
 			// Extrahiere die Kategorie aus dem Mapping
 			for configExt, configStyle := range fileTypeStyleMap {
@@ -724,8 +753,12 @@ func displayResults(stats *Stats, maxCount int) string {
 						category = "Document"
 					} else if strings.Contains(configStyle.String(), "165") {
 						category = "Media"
-					} else if strings.Contains(configStyle.String(), "208") {
+					} else if strings.Contains(configStyle.String(), "133") {
 						category = "Archive"
+					} else if strings.Contains(configStyle.String(), "144") {
+						category = "Special"
+					} else if strings.Contains(configStyle.String(), "155") {
+						category = "Database"
 					}
 					break
 				}
