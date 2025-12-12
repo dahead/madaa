@@ -675,8 +675,10 @@ func analyzeAccessPatterns(info os.FileInfo, stats *Stats) {
 			stats.AccessTimes["last 30 days"]++
 		case daysSinceAccess <= 90:
 			stats.AccessTimes["last 90 days"]++
+		case daysSinceAccess <= 365:
+			stats.AccessTimes["last year"]++
 		default:
-			stats.AccessTimes["older than 90 days"]++
+			stats.AccessTimes["longer than a year"]++
 		}
 	}
 }
