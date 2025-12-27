@@ -316,8 +316,21 @@ var (
 )
 
 func loadConfig() error {
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	madaaConfigDir := filepath.Join(configDir, "madaa")
+	configPath := filepath.Join(madaaConfigDir, "config.ini")
+
+	// Create config directory if it doesn't exist
+	if _, err := os.Stat(madaaConfigDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(madaaConfigDir, 0755); err != nil {
+			return err
+		}
+	}
+
 	// Create default config if it doesn't exist
-	configPath := "config.ini"
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		if err := createDefaultConfig(configPath); err != nil {
 			return err
